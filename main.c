@@ -30,9 +30,10 @@ void createRivals(int *r, int *t); //create rivals
 void createTracker(int n, int c); //allocate memory to tracker
 Cat *findCatByName(char *name, int numCats); //searches each cat and returns cat if name's are the same
 int countHighPerformersTraits(int c, int stop);//to count high performer bonus traits in a team
-int countTraits(int c, int i); //recursively searches through a cat for traits above or equal to 90
-int synergyBonusApplies();//to check if a team gets a synergy bonus or not
-void rivalPenaltyApplies();//to check if a team gets a rival's penalty or not
+int searchPerformers(int c, int i); //recursively searches through a cat for traits above or equal to 90
+int synergyBonusApplies(int c, int stop);//to check if a team gets a synergy bonus or not
+int searchSynergy(int c, int i); //searches through team to see if any scores are >= 85
+int rivalPenaltyApplies();//to check if a team gets a rival's penalty or not
 void usedArrayPerm(); //used array permutation function
 
 
@@ -46,7 +47,7 @@ int main(){
     
     createCats(n, c, t); // create cat teams
     createRivals(r, t); //craete rivals
-    createTracker(*n, *c);
+    createTracker(*n, *c); //allocates memory for tracker
 
     return 0;
 }
@@ -109,21 +110,52 @@ int countHighPerformersTraits(int c, int stop){ //recursively adds +5 for every 
         return 0;
     int total = 0;
     total += countHighPerformersTraits(c-1, stop);
-    total += countTraits(c, MAX_SCORES);
+    total += searchPerformers(c, MAX_SCORES);
     return total;
 }
 
-int countTraits(int c, int i){ //recursively searches each trait in a cat
+int searchPerformers(int c, int i){ //recursively searches each trait in a cat
     if(i-1 == -1)
         return 0;
-    int total = countTraits(c, i-1);
+    int total = searchPerformers(c, i-1);
     if(cats[c].scores[i-1] >= 90)
         total += 5;
     return total;
 }
 
-int synergyBonusApplies(int c){
-    if(c-1 == -1)
+int synergyBonusApplies(int c, int stop){
+    if(c-1 == stop)
+        return 1;
+    if(!searchSynergy(c, MAX_SCORES))
         return 0;
-    
+    return synergyBonusApplies(c-1, stop);
+}
+
+int searchSynergy(int c, int i){
+    if(i-1 == -1)
+        return 0;
+    int total = searchSynergy(c, i-1);
+    if(cats[c].scores[i-1] >= 85)
+        return 1;
+    return searchSynergy(c, i-1);
+}
+
+int rivalPenaltyApplies(int c, int stop, int r){
+    if(c-2 == stop)
+        return 0;
+    int penalty = 0;
+    penalty -= rivalPenaltyApplies(c-1, stop, r);
+    penalty = searchRival(c, r) * -25;
+    return penalty;
+}
+
+int searchRival(int c, int r){
+    if(r-1 == -1)
+        return 0;
+    int total = 0;
+    searchRival(c, r-1);
+    if(&cats[c-2] == rivals[r].cat1 || &cats[c-2] == rivals[r].cat2)
+        if(&cats[c-1] == rivals[r].cat1 || &cats[c-1] == rivals[r].cat2)
+            total += 1;
+    return total;
 }
